@@ -149,36 +149,36 @@ Legend for priority: `Critical` (blocks the core loop), `High` (core quality), `
 
 ```
                                 ┌────────────────────────── VPS #1 (single region) ─────────────────────────┐
-                                │                                                                             │
-  Chrome / Safari clients        │  ┌───────────┐   REST    ┌─────────────┐    Redis    ┌──────────────┐       │
-  (2 per room, desktop)          │  │   web     │──────────▶│   redis     │◀────────────│ realtime     │       │
-                                  │  │ (Next.js) │           │  (+ BullMQ) │             │ Socket.io +  │       │
-  • WebRTC media (P2P)  ─────────┼──▶│ REST API  │           └──────┬──────┘             │ Hocuspocus   │       │
-  • Web Speech (own mic)         │  └───────────┘                  │                    └──────────────┘       │
-  • Yjs clients                  │        ▲                        │ jobs                      ▲              │
-    (CodeMirror/Excalidraw)      │        │                        ▼                           │              │
-  • TURN fallback ───────────────┼──▶ ┌────────────┐          ┌──────────────┐                   │              │
-                                  │    │  coturn    │          │ worker (eval)│                   │              │
-                                │   └────────────┘          │  + BullMQ UI  │                   │              │
-                                │                             └──────┬───────┘                   │              │
-                                │                                    │ LLM                       │              │
-                                │                                    ▼                           │              │
-                                │                       ┌─────────────────────┐                  │              │
-                                │                       │ Gemini 3.8 Flash     │                  │              │
-                                │                       │ (AI SDK, free tier)  │                  │              │
-                                │                       └─────────────────────┘                  │              │
-                                └────────────────────────────────────────────────────────────────┼──────────────┘
-                                                                                                     │ WireGuard
-                                                  ┌───────── VPS #2 (locked down) ───────────────▼─────┐
-                                                  │  worker (exec) ──▶ Docker Engine (dockerode)      │
-                                                  │   • per-language images (C++/Python/Java/Node)   │
-                                                  │   • one ephemeral container per run               │
-                                                  │   • gVisor flag (enable at public launch)         │
-                                                  └────────────────────────────────────────────────────┘
-        ┌───────────────────────┐                        ┌────────────────────┐
-        │ Neon PostgreSQL        │◀── Prisma (web/worker)│ coturn on VPS #1    │
-        │ (persistent storage)  │                        │ TURN relay fallback│
-        └───────────────────────┘                        └────────────────────┘
+                                │                                                                           │
+  Chrome / Safari clients       │  ┌───────────┐   REST    ┌─────────────┐    Redis    ┌──────────────┐     │
+  (2 per room, desktop)         │  │   web     │──────────▶│   redis     │◀────────────│ realtime     │     │
+                                │  │ (Next.js) │           │  (+ BullMQ) │             │ Socket.io +  │     │
+  • WebRTC media (P2P)  ────────┼─▶│ REST API  │           └──────┬──────┘             │ Hocuspocus   │     │
+  • Web Speech (own mic)        │  └───────────┘                  │                    └──────────────┘     │
+  • Yjs clients                 │        ▲                        │ jobs                      ▲             │
+    (CodeMirror/Excalidraw)     │        │                        ▼                           │             │
+  • TURN fallback ──────────────┼──▶┌────────────┐          ┌──────────────┐                  │             │
+                                │   │  coturn    │          │ worker (eval)│                  │             │
+                                │   └────────────┘          │  + BullMQ UI │                  │             │
+                                │                           └──────┬───────┘                  │             │
+                                │                                  │ LLM                      │             │
+                                │                                  ▼                          │             │
+                                │                       ┌─────────────────────┐               │             │
+                                │                       │ Gemini 3.8 Flash    │               │             │
+                                │                       │ (AI SDK, free tier) │               │             │
+                                │                       └─────────────────────┘               │             │
+                                └─────────────────────────────────────────────────────────────┼─────────────┘
+                                                                                              │ WireGuard
+                                                  ┌───────── VPS #2 (locked down) ────────────▼─────┐
+                                                  │  worker (exec) ──▶ Docker Engine (dockerode)    │
+                                                  │   • per-language images (C++/Python/Java/Node)  │
+                                                  │   • one ephemeral container per run             │
+                                                  │   • gVisor flag (enable at public launch)       │
+                                                  └─────────────────────────────────────────────────┘
+        ┌───────────────────────┐                       ┌────────────────────┐
+        │ Neon PostgreSQL       │◀── Prisma (web/worker)│ coturn on VPS #1   │
+        │ (persistent storage)  │                       │ TURN relay fallback│
+        └───────────────────────┘                       └────────────────────┘
 ```
 
 ### Module responsibilities
@@ -477,7 +477,7 @@ Big O grading rule (from the settled spec): grade against the **derived target c
 P0 Foundations ──▶ P1 Bank+Profile ──▶ P2 Rooms ──▶ P3 Realtime core ──▶ P4 WebRTC ──▶ ...
       │                     │              │            │        │
       │                     │              │            ▼        │        P5 Execution engine (T024–T029) ─┐
-      │                     │              │            │        ▼                                        │
+      │                     │              │            │        ▼                                         │
       └────────▶ P6 Transcription (T030–T032) ──▶ P7 AI layer (T033–T037) ──▶ P8 Lifecycle+Timer (T038–T042)
                                                                           │
                                                          P9 Evaluation (T043–T046) ─▶ P10 Integrity/Dashboard (T047–T049)
