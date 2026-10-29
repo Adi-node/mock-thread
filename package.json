@@ -1,0 +1,20 @@
+{
+    "name": "mock-thread",
+    "private": true,
+    "packageManager": "pnpm@12.14.0",
+    "scripts": {
+        "dev": "turbo run dev",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "typecheck": "turbo run typecheck",
+        "test": "turbo run test",
+        "migrate": "pnpm --filter @mt/db exec prisma migrate dev"
+    },
+    "devDependencies": {
+        "prettier": "^3",
+        "tsx": "^4",
+        "turbo": "^2.11.10",
+        "typescript": "^5",
+        "vitest": "^3"
+    }
+}
