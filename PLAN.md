@@ -106,7 +106,7 @@ Legend for priority: `Critical` (blocks the core loop), `High` (core quality), `
 
 | Layer | Choice |
 |---|---|
-| Monorepo | pnpm workspaces, TypeScript strict, Node ≥ 22 (Hocuspocus v4 requires it) |
+| Monorepo | pnpm workspaces + Turborepo task runner, TypeScript strict, Node ≥ 22 (Hocuspocus v4 requires it) |
 | Frontend | Next.js (App Router, latest stable), Tailwind CSS, desktop-only |
 | Editor | **CodeMirror 6 + `y-codemirror.next`** (Yjs v13) — Monaco rejected (dormant y-monaco with known undo/IME bugs) |
 | Whiteboard | **Excalidraw + vendored Yjs binding** (MIT binding vendored into this repo, feature-flagged "beta whiteboard") |
@@ -142,6 +142,7 @@ Legend for priority: `Critical` (blocks the core loop), `High` (core quality), `
 18. Rolling summaries triggered **server-side** (browser tab throttling would break client-side timers).
 19. Persistence: report + final code + full transcript + results + event log per block (text is cheap; transcript is the evidence base for the Communication score).
 20. Postgres + Prisma + JSONB over MongoDB (relational core: User↔Room↔Participant↔Block↔Run↔Report; JSONB handles the payloads).
+21. Turborepo as the task runner on top of bare pnpm workspaces (user decision, made before any scaffold existed). Root scripts (`build`, `dev`, `lint`, `typecheck`, `test`) run via `turbo run`; pnpm remains the sole package manager and link layer. Rationale: frequent cross-package build/typecheck/test cycles across 3 apps + 4 packages are the norm for this project, so graph-parallel scheduling + content-hash caching pays for the extra config. Packages shipping raw TS (`packages/shared`, `packages/db`) intentionally have no `build` task — turbo skips missing tasks; their `typecheck` does not depend on `^build`. Turborepo is a task runner — distinct from Next.js's Turbopack bundler (noted in AGENTS.md).
 
 ---
 
@@ -204,6 +205,7 @@ mock-thread/
 ├── PLAN.md                      # this file
 ├── AGENTS.md                    # agent instructions (created in T001; includes Next.js version caveat)
 ├── pnpm-workspace.yaml
+├── turbo.json
 ├── package.json                 # root scripts: dev, build, test, e2e, ingest, migrate
 ├── .env.example
 ├── apps/
@@ -497,7 +499,7 @@ Parallel tracks (once their deps are `[x]`): P5 engine can be built alongside P3
 - [ ] Not started
 - **Depends on**: —
 - **Objective**: pnpm workspace with a building Next.js app, strict TS, Tailwind, lint/format, git hygiene.
-- **Steps**: 1) `git init`-verified repo: create `pnpm-workspace.yaml` (apps/*, packages/*). 2) Scaffold `apps/web` (Next.js App Router, TS strict, Tailwind v4, ESLint + Prettier). 3) Root scripts: `dev`, `build`, `lint`, `test` (vitest), `typecheck` (all workspaces). 4) `.env.example` with every var from §13.1. 5) `.gitignore` (node_modules, .next, .env, coverage). 6) Write `AGENTS.md`: project map, commands, and a warning to consult the installed Next.js version's own docs (App Router conventions may differ from training data). 7) First commit.
+- **Steps**: 1) `git init`-verified repo: create `pnpm-workspace.yaml` (apps/*, packages/*). 2) Scaffold `apps/web` (Next.js App Router, TS strict, Tailwind v4, ESLint + Prettier). 3) Add Turborepo (`pnpm add -D -w turbo`) + root `turbo.json` with tasks: `build` (dependsOn `["^build"]`, outputs `.next/**` except `.next/cache`), `dev` (`cache: false, persistent: true`), `typecheck` (dependsOn `["^build"]`), `test`, `lint`. Root scripts delegate to `turbo run <task>`. `.gitignore` gains `.turbo/`. Note: packages with no `build` script are skipped by turbo, not an error. 4) `.env.example` with every var from §13.1. 5) `.gitignore` (node_modules, .next, .env, coverage, `.turbo`). 6) Write `AGENTS.md`: project map, commands, and a warning to consult the installed Next.js version's own docs (App Router conventions may differ from training data). 7) First commit.
 - **Files**: repo root, `apps/web`, `AGENTS.md`
 - **Acceptance**: [ ] `pnpm i && pnpm build` succeeds in a clean clone; [ ] `pnpm lint` clean; [ ] landing page renders at localhost.
 - **Verification**: `pnpm build && pnpm lint`
