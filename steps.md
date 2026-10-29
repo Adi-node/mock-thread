@@ -168,7 +168,9 @@ Alternative: `pnpm approve-builds` (interactive selector) writes the same entry 
 
 | Command | What it does |
 |---|---|
-| `pnpm create next-app@latest apps/web --typescript --app --tailwind --eslint --src-dir --import-alias "@/*"` | Scaffolds `apps/web`. If the CLI asks an unfamiliar prompt (Turbopack default, React Compiler, etc.), accept the default and tell me what it asked so we can record it. |
+| `pwd` | Confirms you are in `/home/adi/mock-thread` — the scaffold resolves the target relative to the current directory. |
+| `mkdir -p apps` | **Required before scaffolding.** create-next-app checks writability of the *parent* of the target (`apps/`), and a non-existent parent fails the check with a misleading "The application path is not writable / check folder permissions" error. Pre-creating `apps/` avoids it. |
+| `pnpm create next-app@latest apps/web --typescript --app --tailwind --eslint --src-dir --import-alias "@/*" --disable-git` | Scaffolds `apps/web`. `--disable-git` is essential: without it create-next-app runs `git init` inside `apps/web`, creating a nested repo that breaks tracking in our existing root repository. If the CLI prints "Using defaults for unprovided options" (e.g. React Compiler off, Cache Components on, AGENTS.md on), that is expected — defaults accepted; record anything surprising so it can land in AGENTS.md. |
 | `pnpm install` | Links the workspace after scaffolding (create-next-app generates its own package.json inside the workspace folder, which pnpm auto-registers). |
 | `pnpm ls -r --depth -1` | Sanity check: confirms `apps/web` is a recognized workspace package (you should see the root + `web` entries). |
 
@@ -206,7 +208,7 @@ Deduplicate the two lines the plan squashes with `;` into one var per line (e.g.
 **Content**: a short file with:
 1. Project map: list `apps/web`, and the planned `apps/realtime`, `apps/worker`, `packages/shared`, `packages/db`, `packages/llm`, `packages/engine` (with their one-line responsibilities from plan §6 table).
 2. Commands: `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm migrate`, `docker compose -f docker/compose.dev.yaml up -d`.
-3. The Next.js version caveat (consult installed-version docs, not generic App Router memory).
+3. The Next.js version caveat (consult installed-version docs, not generic App Router memory). Also note Next 16 conventions observed at scaffold time: Cache Components enabled by default, `AGENTS.md` generated inside `apps/web` by create-next-app (the root `AGENTS.md` below is separate and project-wide), Turbopack is the default bundler; create-next-app targets must have an existing parent directory (`mkdir -p apps` first) and get `--disable-git` in a repo context.
 4. The Turborepo/Turbopack distinction (A2): Turborepo = task runner that the root scripts call; Turbopack = Next.js bundler. Packages without a `build` script are skipped by turbo silently — that's intended while `packages/*` ship raw TS.
 5. The pnpm install-script allowlist (A2b): pnpm 12 blocks dependency postinstall scripts; approved packages live in `allowBuilds` in `pnpm-workspace.yaml` (the `pnpm` field in package.json is dead). Each entry grants install-time code execution — keep minimal and justified.
 6. Pointer to PLAN.md as the single source of truth + the rule that architecture changes go through PLAN.md Appendix D.
