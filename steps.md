@@ -6,7 +6,9 @@ Progress log (compact — details live in PLAN.md appendices):
 - A2/A2b done: turbo 2.11.10 installed; esbuild install-script approved via `allowBuilds: {esbuild: true}` in pnpm-workspace.yaml (pnpm 12.14 syntax — the pre-12 `pnpm.onlyBuiltDependencies` field in package.json is no longer read; discovered during A2, documented in A2b).
 - A3 done: `apps/web` scaffolded with create-next-app 16.4.3 (`--disable-git`; auth defaults observed: Cache Components on, AGENTS.md generated inside apps/web, Tailwind via `@tailwindcss/turbopack`, Turbopack bundler). Scaffold artifacts removed: apps/web/pnpm-workspace.yaml + apps/web/pnpm-lock.yaml. `unrs-resolver` added to allowBuilds. `pnpm ls -r` shows root + `web@0.1.0` — **PENDING: rename apps/web package name to `@mt/web` + re-run pnpm install** (first transaction of the bookkeeping note in A3 "Finish A3").
 
-NEXT STEP: finish A3 rename → A4 (prettier) → A5 (landing page) → A6 (.env.example) → A7 (AGENTS.md) → A8 (verify + commit).
+NEXT STEP: A8 (verify + commit Part A). A7 done: root AGENTS.md written by agent (covers: PLAN.md-as-truth, repo map, turbo/pnpm-12/allowBuilds realities, Next 16.4.3 caveats incl. apps/web/AGENTS.md being tool-managed and kept, working agreements).
+
+Remaining Part A items before review: A8 verification table (`pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm dev` landing render) + the `task(T001)` commit (user's work commits there together — first commit including scaffold).
 - Instructions updated to use turborepo (PLAN.md §5.2 decision #21 + §10 T001 amended; run logs note: PLAN.md + steps.md updated together in one commit before any code was written).
 - Completed: none yet. No application code exists; repository contains only PLAN.md.
 
