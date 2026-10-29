@@ -2,15 +2,10 @@
 
 Progress log (compact — details live in PLAN.md appendices):
 
-- Milestone 1 — Foundations (T001, T003, T002): **IN PROGRESS — not reviewed**
-- A2/A2b done: turbo 2.11.10 installed; esbuild install-script approved via `allowBuilds: {esbuild: true}` in pnpm-workspace.yaml (pnpm 12.14 syntax — the pre-12 `pnpm.onlyBuiltDependencies` field in package.json is no longer read; discovered during A2, documented in A2b).
-- A3 done: `apps/web` scaffolded with create-next-app 16.4.3 (`--disable-git`; auth defaults observed: Cache Components on, AGENTS.md generated inside apps/web, Tailwind via `@tailwindcss/turbopack`, Turbopack bundler). Scaffold artifacts removed: apps/web/pnpm-workspace.yaml + apps/web/pnpm-lock.yaml. `unrs-resolver` added to allowBuilds. `pnpm ls -r` shows root + `web@0.1.0` — **PENDING: rename apps/web package name to `@mt/web` + re-run pnpm install** (first transaction of the bookkeeping note in A3 "Finish A3").
-
-NEXT STEP: A8 (verify + commit Part A). A7 done: root AGENTS.md written by agent (covers: PLAN.md-as-truth, repo map, turbo/pnpm-12/allowBuilds realities, Next 16.4.3 caveats incl. apps/web/AGENTS.md being tool-managed and kept, working agreements).
-
-Remaining Part A items before review: A8 verification table (`pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm dev` landing render) + the `task(T001)` commit (user's work commits there together — first commit including scaffold).
-- Instructions updated to use turborepo (PLAN.md §5.2 decision #21 + §10 T001 amended; run logs note: PLAN.md + steps.md updated together in one commit before any code was written).
-- Completed: none yet. No application code exists; repository contains only PLAN.md.
+- Milestone 1 — Foundations (T001, T003, T002): **IN PROGRESS — Part A provisionally reviewed**
+- T001 (Part A): A1–A8 done and committed as `task(T001)` (c5f52e1). Turbo installed (allowBuilds: esbuild, unrs-resolver in root pnpm-workspace.yaml); apps/web scaffolded (create-next-app 16.4.3, `--disable-git`, `@mt/web` rename done, scaffold artifacts removed); root `AGENTS.md` written; app-local `apps/web/AGENTS.md` kept (next-dev-managed). Landing page 404s at `/login` correctly.
+- PLAN.md §5.2 decision #21 (Turborepo) + §10 T001 amended before any code was written.
+- **Part A review: PROVISIONAL ACCEPT — 2 Important + 2 Minor findings must be fixed before Part B.** See "Part A review outcome" below. Part B (T003 compose) is locked until final accept.
 
 ---
 
@@ -18,15 +13,45 @@ Remaining Part A items before review: A8 verification table (`pnpm build`, `pnpm
 
 ## Part A review outcome (reviewer: agent — PROVISIONAL ACCEPT, 2 Important findings to fix first)
 
-**Verified by reviewer:** `pnpm build` exit 0 (Next build + TS check ran inside build); `pnpm lint` exit 0; `pnpm ls -r` shows root + `@mt/web`; no `.env` tracked anywhere (`check-ignore` confirms both root and apps/web ignores); scaffold artifacts confirmed removed (no nested pnpm-workspace.yaml / lockfile / .git); turbo.json + allowBuilds correct; `.env.example` structure matches PLAN §13.1; prettier configs match A4 spec; root `AGENTS.md` + apps/web `AGENTS.md` (tool-managed) in place; `/login` correctly 404s (T004 wiring, expected).
+### Fix instructions for you
 
-**Important 1 — A5 landing content not implemented.** `apps/web/src/app/page.tsx` is a bare `"use client"` button. A5 requires: "MockThread" name, the one-line tagline, a Log In *link* (`<Link href="/login">` from `next/link` — a server component that way, no `useRouter`/`"use client"` needed), Tailwind classes for the dark layout. The page renders (render path proven) but the specified content is missing.
+**Fix 1 (Important) — `apps/web/src/app/page.tsx`:** rewrite as a **server component** (delete `"use client"` and the `useRouter` import entirely — you don't need either). Guidance, not final code:
 
-**Important 2 — `pnpm typecheck` is a silent no-op.** `@mt/web` has no `typecheck` script, so turbo ran **0 tasks** and exited 0. False confidence: the "verify" step claims coverage it doesn't have. Fix: add `"typecheck": "tsc --noEmit"` to `apps/web/package.json` scripts, confirm it actually compiles, and that `pnpm typecheck` then executes 1 task.
+```
+// shape:
+// <main> with Tailwind classes: min-h-screen, dark bg (bg-neutral-950), centered flex column
+//   <h1> "MockThread" (text-4xl/tracking, keep it plain for now)
+//   <p>  "Real-time peer-to-peer mock technical interviews" (muted color)
+//   <Link href="/login"> "Log in" </Link>   ← import Link from "next/link"
+```
 
-**Minor (fix alongside, don't block on):** (1) `.env.example` — stray `;` after `ENGINE_MAX_CONCURRENT=4`; file lacks a trailing newline. (2) `turbo.json` — inconsistent indentation inside the `build` task; run `pnpm exec prettier --write` on it (prettier configs already exist).
+Why `<Link>` and not `router.push`: static navigation is exactly what Link is for; a server component stays server-rendered (no client JS shipped for a static page). `/login` still 404s — expected until T004.
 
-Fix both Important items + Minors, re-run the A8 verification table (typecheck must now show "1 successful" instead of "0 executed"), commit the fixes as `task(T001): part A review fixes` (or amend-message equivalent), then ping for final confirmation. Part B (T003 compose) stays locked until then.
+**Fix 2 (Important) — `apps/web/package.json`:** add to the existing `scripts` object:
+
+```jsonc
+"typecheck": "tsc --noEmit"
+```
+
+Then run `pnpm typecheck` at the root and confirm turbo reports **1 successful** (not "No tasks were executed"), i.e. the script exists and tsc passes with Next's generated types (`next-env.d.ts` is already in tsconfig's include).
+
+**Minor fixes while you're in there:** remove the stray `;` after `ENGINE_MAX_CONCURRENT=4` in `.env.example` and add a trailing newline; run `pnpm exec prettier --write turbo.json` for consistent formatting.
+
+**Then re-verify (A8 table, from repo root):**
+
+| Command | Expect |
+|---|---|
+| `pnpm build` | 1 successful |
+| `pnpm lint` | exit 0 |
+| `pnpm typecheck` | **1 successful task** (this is the regression the finding targets) |
+| `pnpm dev` → open `http://localhost:3000` | landing shows: MockThread heading + tagline + Log in link (screenshot check) |
+| `pnpm exec tsc --version && pnpm --filter @mt/web exec tsc --noEmit && echo OK` | typecheck runs individually too |
+
+**Commit:** `git add -A && git commit -m "task(T001): part A review fixes — landing content via Link, workspace typecheck script, env example cleanup"`.
+
+**Reviewer's verified evidence (for the record):** `pnpm build` exit 0 ✓; `pnpm lint` exit 0 ✓ (both cache-replays of your A8 runs on identical inputs); `pnpm ls -r` = root + `@mt/web` ✓; no `.env` tracked (`git check-ignore` confirms root + apps/web ignore rules) ✓; no scaffold leftovers (nested pnpm-workspace.yaml/lockfile/.git all confirmed absent) ✓; turbo.json + allowBuilds correct ✓; `.env.example` covers §13.1 ✓; prettier per A4 ✓; AGENTS.md pairs in place ✓; `/login` 404 as designed ✓. `pnpm typecheck` ✗ — the no-op finding above.
+
+**Verdict:** everything else in Part A meets the acceptance criteria. Fix the two Important findings (+ minors), re-run the table, commit, and ping me — final accept then unlocks **Part B (T003: compose + env module)**.
 
 ---
 
