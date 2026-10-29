@@ -196,20 +196,21 @@ Add root script `"seed": "pnpm --filter @mt/db seed"` if you wire a package-leve
 
 ## Acceptance checklist (milestone-level, from PLAN.md T001/T003/T002)
 
-- [ ] `pnpm i && pnpm build` succeeds
-- [ ] `pnpm lint` clean
-- [ ] Landing page renders at localhost (shows db indicator + topic count)
-- [ ] Compose boots Postgres + Redis; PONG + psql connect verified
-- [ ] `pnpm dev` boots with compose up; env fail-fast demonstrably works
-- [ ] `pnpm --filter @mt/db exec prisma migrate status` = up to date
-- [ ] Topics smoke query returns from `apps/web`
-- [ ] Commits follow `task(T00x): …` format; `.env` files gitignored; no secrets committed
-- [ ] No leftover scaffold artifacts: no `apps/web/pnpm-workspace.yaml`, no `apps/web/pnpm-lock.yaml`, no `.git` inside `apps/web`
-- [ ] `apps/web/package.json` name is `@mt/web` and `pnpm --filter @mt/web exec next --version` resolves (proves the rename + lockfile are consistent)
-- [ ] Root `.gitignore` excludes `packages/*/src/generated/`
+- [x] `pnpm i && pnpm build` succeeds *(verified, T001 accept)*
+- [x] `pnpm lint` clean *(verified)*
+- [ ] Landing page renders at localhost (shows db indicator + **topic count** — count part pending Part C)
+- [x] Compose boots Postgres + Redis; PONG + psql connect verified *(verified, T003 accept)*
+- [x] `pnpm dev` boots with compose up; env fail-fast demonstrably works *(verified both directions)*
+- [ ] `pnpm --filter @mt/db exec prisma migrate status` = up to date *(Part C)*
+- [ ] Topics smoke query returns from `apps/web` *(Part C)*
+- [x] Commits follow `task(T00x): …` format; `.env` files gitignored; no secrets committed *(verified so far — re-check after Part C's generated files/gitignore additions)*
+- [x] No leftover scaffold artifacts: no `apps/web/pnpm-workspace.yaml`, no `apps/web/pnpm-lock.yaml`, no `.git` inside `apps/web` *(verified)*
+- [x] `apps/web/package.json` name is `@mt/web` and filter resolves *(verified)*
+- [ ] Root `.gitignore` excludes `packages/*/src/generated/` *(Part C — add when the db package lands)*
 
 ## Known / open items carried into next milestone
 
+- **Carried now:** env schema has `ENGINE_URL`, `ENGINE_API_KEY`, `WORKER_CONCURRENCY` not present in `.env.example` — resolve by end of Part C (align the two sources; schema is the contract).
 - T001 notes: exact Next.js version installed may advance past plan assumptions (plan says "latest stable"); behavior differences go in AGENTS.md, not plan edits unless they contradict §8 contracts.
 - T005's 15-topic slug list is something you'll be committing in this milestone's seed stub; T007 (bank validation) may prune later — that's expected, not a deviation.
 - `~/algo-arena` confirmed present locally for porting; `~/aiproject/ai_interviewer` confirmed for later WebRTC tasks (T021/T022), not needed now.
