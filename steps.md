@@ -16,6 +16,22 @@ Remaining Part A items before review: A8 verification table (`pnpm build`, `pnpm
 
 # Milestone 1 — Foundations: Monorepo scaffold, dev infrastructure, database layer
 
+## Part A review outcome (reviewer: agent — PROVISIONAL ACCEPT, 2 Important findings to fix first)
+
+**Verified by reviewer:** `pnpm build` exit 0 (Next build + TS check ran inside build); `pnpm lint` exit 0; `pnpm ls -r` shows root + `@mt/web`; no `.env` tracked anywhere (`check-ignore` confirms both root and apps/web ignores); scaffold artifacts confirmed removed (no nested pnpm-workspace.yaml / lockfile / .git); turbo.json + allowBuilds correct; `.env.example` structure matches PLAN §13.1; prettier configs match A4 spec; root `AGENTS.md` + apps/web `AGENTS.md` (tool-managed) in place; `/login` correctly 404s (T004 wiring, expected).
+
+**Important 1 — A5 landing content not implemented.** `apps/web/src/app/page.tsx` is a bare `"use client"` button. A5 requires: "MockThread" name, the one-line tagline, a Log In *link* (`<Link href="/login">` from `next/link` — a server component that way, no `useRouter`/`"use client"` needed), Tailwind classes for the dark layout. The page renders (render path proven) but the specified content is missing.
+
+**Important 2 — `pnpm typecheck` is a silent no-op.** `@mt/web` has no `typecheck` script, so turbo ran **0 tasks** and exited 0. False confidence: the "verify" step claims coverage it doesn't have. Fix: add `"typecheck": "tsc --noEmit"` to `apps/web/package.json` scripts, confirm it actually compiles, and that `pnpm typecheck` then executes 1 task.
+
+**Minor (fix alongside, don't block on):** (1) `.env.example` — stray `;` after `ENGINE_MAX_CONCURRENT=4`; file lacks a trailing newline. (2) `turbo.json` — inconsistent indentation inside the `build` task; run `pnpm exec prettier --write` on it (prettier configs already exist).
+
+Fix both Important items + Minors, re-run the A8 verification table (typecheck must now show "1 successful" instead of "0 executed"), commit the fixes as `task(T001): part A review fixes` (or amend-message equivalent), then ping for final confirmation. Part B (T003 compose) stays locked until then.
+
+---
+
+# Milestone 1 — Foundations: Monorepo scaffold, dev infrastructure, database layer
+
 ## A. Milestone overview
 
 - **Milestone number and name**: Milestone 1 — Foundations
