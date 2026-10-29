@@ -496,7 +496,7 @@ Parallel tracks (once their deps are `[x]`): P5 engine can be built alongside P3
 ### Phase 0 — Foundations
 
 **T001 — Monorepo scaffold** `Critical`
-- [ ] Not started
+- [x] Done (accepted Part A of Milestone 1)
 - **Depends on**: —
 - **Objective**: pnpm workspace with a building Next.js app, strict TS, Tailwind, lint/format, git hygiene.
 - **Steps**: 1) `git init`-verified repo: create `pnpm-workspace.yaml` (apps/*, packages/*). 2) Scaffold `apps/web` (Next.js App Router, TS strict, Tailwind v4, ESLint + Prettier). 3) Add Turborepo (`pnpm add -D -w turbo`) + root `turbo.json` with tasks: `build` (dependsOn `["^build"]`, outputs `.next/**` except `.next/cache`), `dev` (`cache: false, persistent: true`), `typecheck` (dependsOn `["^build"]`), `test`, `lint`. Root scripts delegate to `turbo run <task>`. `.gitignore` gains `.turbo/`. Note: packages with no `build` script are skipped by turbo, not an error. 4) `.env.example` with every var from §13.1. 5) `.gitignore` (node_modules, .next, .env, coverage, `.turbo`). 6) Write `AGENTS.md`: project map, commands, and a warning to consult the installed Next.js version's own docs (App Router conventions may differ from training data). 7) First commit.
@@ -1209,6 +1209,7 @@ Boot checks (web up, WSS handshake, Redis ping, engine `docker info`, coturn `tu
 
 | Task | Verified on | Evidence |
 |---|---|---|
+| T001 | 2026-10-29 | `pnpm build`/`lint`/`typecheck` all exit 0 via turbo (`typecheck`: 1 task, freshly executed); landing page renders — verified by reviewer from served HTML: HTTP 200 with `<h1 class="text-4xl text-neutral-100">MockThread</h1>` + tagline + `Log in` Link; workspace links `@mt/web`; no `.env` tracked; commits `c5f52e1` + review-fix set (incl. turbo task runner — decision #21) |
 
 ## Appendix D — Decision & Findings Log (empty)
 
