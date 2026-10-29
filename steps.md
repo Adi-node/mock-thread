@@ -3,7 +3,10 @@
 Progress log (compact — details live in PLAN.md appendices):
 
 - Milestone 1 — Foundations (T001, T003, T002): **IN PROGRESS — not reviewed**
-- A2/A2b done so far: turbo 2.11.10 installed; esbuild install-script approved via `allowBuilds: {esbuild: true}` in pnpm-workspace.yaml (pnpm 12.14 syntax — the pre-12 `pnpm.onlyBuiltDependencies` field in package.json is no longer read; discovered during A2, documented in A2b). NEXT STEP: A3 scaffold apps/web.
+- A2/A2b done: turbo 2.11.10 installed; esbuild install-script approved via `allowBuilds: {esbuild: true}` in pnpm-workspace.yaml (pnpm 12.14 syntax — the pre-12 `pnpm.onlyBuiltDependencies` field in package.json is no longer read; discovered during A2, documented in A2b).
+- A3 done: `apps/web` scaffolded with create-next-app 16.4.3 (`--disable-git`; auth defaults observed: Cache Components on, AGENTS.md generated inside apps/web, Tailwind via `@tailwindcss/turbopack`, Turbopack bundler). Scaffold artifacts removed: apps/web/pnpm-workspace.yaml + apps/web/pnpm-lock.yaml. `unrs-resolver` added to allowBuilds. `pnpm ls -r` shows root + `web@0.1.0` — **PENDING: rename apps/web package name to `@mt/web` + re-run pnpm install** (first transaction of the bookkeeping note in A3 "Finish A3").
+
+NEXT STEP: finish A3 rename → A4 (prettier) → A5 (landing page) → A6 (.env.example) → A7 (AGENTS.md) → A8 (verify + commit).
 - Instructions updated to use turborepo (PLAN.md §5.2 decision #21 + §10 T001 amended; run logs note: PLAN.md + steps.md updated together in one commit before any code was written).
 - Completed: none yet. No application code exists; repository contains only PLAN.md.
 
@@ -160,6 +163,8 @@ Alternative: `pnpm approve-builds` (interactive selector) writes the same entry 
 
 **Security framing (goes in AGENTS.md in A7)**: an `allowBuilds` entry grants *code execution at install time* to the named package — keep the list minimal and each entry justifiable (esbuild: native binary required by tsx/vitest; prisma: downloads its query engine).
 
+**Ongoing recipe** (this exact pattern repeats all milestone long): whenever `pnpm install` fails with `ERR_PNPM_IGNORED_BUILDS — Ignored build scripts: <name>@<ver>`, add `<name>: true` to `allowBuilds` **only for the names pnpm actually reported**, re-run `pnpm install`, and move on. Packages seen so far on this project: `esbuild` (via tsx/vitest), `unrs-resolver` (via eslint-config-next, appeared when `apps/web` joined the workspace). Expect more in Part C (prisma family) if pnpm reports them.
+
 ### A3. Scaffold the Next.js app
 
 **Objective**: A building Next.js App Router app with TS strict, Tailwind v4, ESLint.
@@ -170,17 +175,19 @@ Alternative: `pnpm approve-builds` (interactive selector) writes the same entry 
 |---|---|
 | `pwd` | Confirms you are in `/home/adi/mock-thread` — the scaffold resolves the target relative to the current directory. |
 | `mkdir -p apps` | **Required before scaffolding.** create-next-app checks writability of the *parent* of the target (`apps/`), and a non-existent parent fails the check with a misleading "The application path is not writable / check folder permissions" error. Pre-creating `apps/` avoids it. |
-| `pnpm create next-app@latest apps/web --typescript --app --tailwind --eslint --src-dir --import-alias "@/*" --disable-git` | Scaffolds `apps/web`. `--disable-git` is essential: without it create-next-app runs `git init` inside `apps/web`, creating a nested repo that breaks tracking in our existing root repository. If the CLI prints "Using defaults for unprovided options" (e.g. React Compiler off, Cache Components on, AGENTS.md on), that is expected — defaults accepted; record anything surprising so it can land in AGENTS.md. |
-| `pnpm install` | Links the workspace after scaffolding (create-next-app generates its own package.json inside the workspace folder, which pnpm auto-registers). |
-| `pnpm ls -r --depth -1` | Sanity check: confirms `apps/web` is a recognized workspace package (you should see the root + `web` entries). |
-
-Note the generated package name — if create-next-app names it `web`, rename it to `@mt/web` (edit `apps/web/package.json` `"name"` field) so filters are consistent plan-wide.
+| `pnpm create next-app@latest apps/web --typescript --app --tailwind --eslint --src-dir --import-alias "@/*" --disable-git` | Scaffolds `apps/web`. `--disable-git` is essential: without it create-next-app runs `git init` inside `apps/web`, creating a nested repo that breaks tracking in our existing root repository. If the CLI prints "Using defaults for unprovided options" (e.g. React Compiler off, Cache Components on, AGENTS.md on), that is expected — defaults accepted; record anything surprising so it can land in AGENTS.md. Observed with 16.4.3: devDeps include `@tailwindcss/turbopack` (not `@tailwindcss/postcss`), an `AGENTS.md` is written *inside* `apps/web`, and route types are generated at the end. |
+| `rm apps/web/pnpm-workspace.yaml` | **Workspace cleanup.** create-next-app 16.4.3 generates its own `pnpm-workspace.yaml` inside `apps/web`; inside our workspace pnpm reads settings only from the root file, so the nested one is dead weight and triggers the WARN "settings in apps/web/pnpm-workspace.yaml do not apply". `cat` it first in case a future scaffold version puts real settings there (then merge them into the root file before deleting). |
+| `if [ -f apps/web/pnpm-lock.yaml ]; then rm apps/web/pnpm-lock.yaml; fi` | The scaffold ran a self-contained `pnpm install` before the folder joined the workspace, so a stray per-project lockfile may exist. The root `pnpm-lock.yaml` must be the single source of truth; delete the nested one. |
+| `pnpm install` | Links the workspace. Expect possible `ERR_PNPM_IGNORED_BUILDS` for new native deps coming with the app (e.g. `unrs-resolver` via eslint-config-next) — handle per the A2b recipe. Also expect a `deprecated eslint@9.39.5` WARN: eslint-config-next still pins ESLint ^9 while 10.x exists upstream — informational, do not act. |
+| `pnpm ls -r --depth -1` | Sanity check: confirms the workspace links the app. Expect exactly two entries: `mock-thread` (root) and `web@0.1.0` (apps/web). |
 
 **Why**: Handcrafting the Next.js config wastes time and drifts from current-version conventions — the scaffold is the sane starting point. **Important caveat (goes in AGENTS.md below in A7)**: Next.js App Router conventions change between versions; consult the docs for the *installed* version (likely Next 16) rather than assuming older training-data conventions.
 
+**Finish A3 — rename the package** (the scaffold names it `web@0.1.0`): edit `apps/web/package.json`'s `"name"` field to `@mt/web`, then re-run `pnpm install` so the lockfile records the new name. All later commands use `--filter @mt/web`, e.g. `pnpm --filter @mt/web dev`. If the filter doesn't resolve, the rename wasn't saved or the install wasn't re-run.
+
 ### A4. Tailwind + lint/format config
 
-- Keep the scaffold's Tailwind v4 setup (`@tailwindcss/postcss` + a CSS entry with `@import "tailwindcss";`).
+- Keep the scaffold's Tailwind v4 setup. Note: Next 16.4.3 scaffolds `@tailwindcss/turbopack` as the Tailwind integration (not `@tailwindcss/postcss` as older guides say) — keep what the scaffold gave you and don't "fix" it back.
 - Add `prettier` at the ROOT only: create a minimal `.prettierrc.json` (`{ "semi": true, "singleQuote": false, "printWidth": 100 }`) and a `.prettierignore` (`node_modules`, `.next`, `pnpm-lock.yaml`). No config plumbing in each package yet — root prettier is enough for now.
 - No extra ESLint plugins. `eslint-config-next` from the scaffold is the standard.
 
@@ -560,6 +567,8 @@ Add root script `"seed": "pnpm --filter @mt/db seed"` if you wire a package-leve
 - [ ] `pnpm --filter @mt/db exec prisma migrate status` = up to date
 - [ ] Topics smoke query returns from `apps/web`
 - [ ] Commits follow `task(T00x): …` format; `.env` files gitignored; no secrets committed
+- [ ] No leftover scaffold artifacts: no `apps/web/pnpm-workspace.yaml`, no `apps/web/pnpm-lock.yaml`, no `.git` inside `apps/web`
+- [ ] `apps/web/package.json` name is `@mt/web` and `pnpm --filter @mt/web exec next --version` resolves (proves the rename + lockfile are consistent)
 - [ ] Root `.gitignore` excludes `packages/*/src/generated/`
 
 ## Known / open items carried into next milestone
