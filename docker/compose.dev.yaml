@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: mockthread
+      POSTGRES_PASSWORD: mockthread
+      POSTGRES_DB: mockthread
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:
