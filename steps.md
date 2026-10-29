@@ -2,7 +2,8 @@
 
 Progress log (compact — details live in PLAN.md appendices):
 
-- Milestone 1 — Foundations (T001, T003, T002): **IN PROGRESS — not reviewed, nothing started yet**
+- Milestone 1 — Foundations (T001, T003, T002): **IN PROGRESS — not reviewed**
+- A2/A2b done so far: turbo 2.11.10 installed; esbuild install-script approved via `allowBuilds: {esbuild: true}` in pnpm-workspace.yaml (pnpm 12.14 syntax — the pre-12 `pnpm.onlyBuiltDependencies` field in package.json is no longer read; discovered during A2, documented in A2b). NEXT STEP: A3 scaffold apps/web.
 - Instructions updated to use turborepo (PLAN.md §5.2 decision #21 + §10 T001 amended; run logs note: PLAN.md + steps.md updated together in one commit before any code was written).
 - Completed: none yet. No application code exists; repository contains only PLAN.md.
 
@@ -133,6 +134,32 @@ coverage/
 
 **Naming clarity (goes in AGENTS.md in A7):** *Turborepo* (task runner, this section) is a different thing from *Turbopack* (the bundler create-next-app enabled by default in Next 16). Both will show up in logs; don't confuse them.
 
+### A2b. pnpm 12 install-script approval (required after the first `pnpm add`)
+
+**What happens**: pnpm ≥ 10 blocks third-party dependencies' `postinstall`/build scripts by default (supply-chain protection). Installing turbo pulls in packages that need native binaries — first hit: `esbuild` (transitive dep of `tsx`/`vitest`). pnpm aborts with:
+
+```
+Error: ERR_PNPM_IGNORED_BUILDS — Ignored build scripts: esbuild@x.y.z
+help: Run "pnpm approve-builds" ...
+```
+
+**This is expected, not an error to fix by reinstalling.** Approve the build script in `pnpm-workspace.yaml` — the pnpm-12 home for these settings (the legacy `pnpm` field inside `package.json` is **no longer read**; don't use it):
+
+```yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+```
+
+It's a map of package-name → `true`/`false`, not a list. Then re-run `pnpm install` — expect a line like `Running postinstall script, done in …` for esbuild and no `ERR_PNPM_IGNORED_BUILDS`. Prove the binary works with `pnpm exec tsx --version`.
+
+Alternative: `pnpm approve-builds` (interactive selector) writes the same entry for you. Both are equivalent; either way the allowlist lives in the committed `pnpm-workspace.yaml`, which is the point — reproducible for anyone cloning the repo.
+
+**Security framing (goes in AGENTS.md in A7)**: an `allowBuilds` entry grants *code execution at install time* to the named package — keep the list minimal and each entry justifiable (esbuild: native binary required by tsx/vitest; prisma: downloads its query engine).
+
 ### A3. Scaffold the Next.js app
 
 **Objective**: A building Next.js App Router app with TS strict, Tailwind v4, ESLint.
@@ -181,7 +208,8 @@ Deduplicate the two lines the plan squashes with `;` into one var per line (e.g.
 2. Commands: `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm migrate`, `docker compose -f docker/compose.dev.yaml up -d`.
 3. The Next.js version caveat (consult installed-version docs, not generic App Router memory).
 4. The Turborepo/Turbopack distinction (A2): Turborepo = task runner that the root scripts call; Turbopack = Next.js bundler. Packages without a `build` script are skipped by turbo silently — that's intended while `packages/*` ship raw TS.
-5. Pointer to PLAN.md as the single source of truth + the rule that architecture changes go through PLAN.md Appendix D.
+5. The pnpm install-script allowlist (A2b): pnpm 12 blocks dependency postinstall scripts; approved packages live in `allowBuilds` in `pnpm-workspace.yaml` (the `pnpm` field in package.json is dead). Each entry grants install-time code execution — keep minimal and justified.
+6. Pointer to PLAN.md as the single source of truth + the rule that architecture changes go through PLAN.md Appendix D.
 
 ### A8. Verify + commit
 
@@ -410,6 +438,8 @@ mkdir -p packages/db/{prisma,src,scripts}
 `packages/db/prisma.config.ts` — copy the pattern from `~/algo-arena/prisma.config.ts` (shown earlier in conversation). It needs `import "dotenv/config";` then `defineConfig` with `schema`, `migrations.path`, and `datasource.url` from `process.env.DATABASE_URL`.
 
 **Important**: Prisma v7 requires a `.env` or dotenv-loaded `DATABASE_URL` visible to this package when you run migrate — since compose Postgres is dev-local, create `packages/db/.env` too (gitignored) or rely on `dotenv/config` picking an env you set in the shell. Simplest consistent choice: duplicate the one-line `DATABASE_URL=...` into `packages/db/.env` (gitignored) so directives from the root work; the file is a copy of a dev-only local credential, not a secret leak.
+
+**pnpm 12 heads-up (A2b again)**: installing the db deps will very likely trip `ERR_PNPM_IGNORED_BUILDS` for `prisma` / `@prisma/engines` (they download native engine binaries via postinstall). Extend `allowBuilds` in `pnpm-workspace.yaml` with exactly the packages pnpm names, each as `name: true`, then `pnpm install` again — don't pre-approve blind, approve what the error lists (and it may turn out prisma v7 doesn't need it; only add what pnpm actually reports).
 
 ### C2. `schema.prisma` — exactly per §8.1
 
