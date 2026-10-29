@@ -516,7 +516,7 @@ Parallel tracks (once their deps are `[x]`): P5 engine can be built alongside P3
 - **Outcome**: durable data layer for every feature.
 
 **T003 — Dev infrastructure compose + env loading** `Critical`
-- [ ] Not started
+- [x] Done (accepted in Milestone 1 Part B)
 - **Depends on**: T001
 - **Objective**: one-command local infra (Postgres, Redis AOF) + validated env.
 - **Steps**: 1) `docker/compose.dev.yaml`: `postgres:16`, `redis:7` (`--appendonly yes`). 2) Shared env module (zod-validated) in `packages/shared` consumed by all apps; fail-fast on missing vars. 3) `docker compose -f docker/compose.dev.yaml up -d` documented in README/AGENTS.
@@ -1210,6 +1210,7 @@ Boot checks (web up, WSS handshake, Redis ping, engine `docker info`, coturn `tu
 | Task | Verified on | Evidence |
 |---|---|---|
 | T001 | 2026-10-29 | `pnpm build`/`lint`/`typecheck` all exit 0 via turbo (`typecheck`: 1 task, freshly executed); landing page renders — verified by reviewer from served HTML: HTTP 200 with `<h1 class="text-4xl text-neutral-100">MockThread</h1>` + tagline + `Log in` Link; workspace links `@mt/web`; no `.env` tracked; commits `c5f52e1` + review-fix set (incl. turbo task runner — decision #21) |
+| T003 | 2026-10-29 | compose.dev.yaml boots postgres:16 + redis:7 (AOF); reviewer verified `redis-cli ping`=PONG and `pg_isready`=accepting; zod env module in `@mt/shared` fail-fast verified twice (missing `DATABASE_URL` → clear error listing var; restore → indicator). Build/lint/typecheck fresh, exit 0. Commit `648d0db`. Minor carried: env schema has 3 engine/worker vars absent from `.env.example` — resolve by aligning one source (schema is the contract) |
 
 ## Appendix D — Decision & Findings Log (empty)
 

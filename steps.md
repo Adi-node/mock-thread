@@ -2,9 +2,9 @@
 
 Progress log (compact — details live in PLAN.md appendices):
 
-- **Milestone 1 — Foundations (T001 ✅, T003 in progress, T002 pending):**
-- **Part A (T001) — ✅ ACCEPTED 2026-10-29.** All findings fixed and verified (build/lint/typecheck exit 0; landing render verified from served HTTP 200 HTML; no secrets tracked; no scaffold leftovers). Logged in PLAN.md Appendix C. Commits: `c5f52e1 task(T001)` + the user's review-fix commit.
-- **NOW ACTIVE: Part B (T003 — dev compose + `@mt/shared` env module)** → then Part C (T002 — prisma). Instructions below in full.
+- **Milestone 1 — Foundations (T001 ✅, T003 ✅, T002 in progress):**
+- **Part A (T001) ✅ and Part B (T003) ✅ both ACCEPTED** — evidence in their accepted-summary blocks + PLAN.md Appendix C.
+- **NOW ACTIVE: Part C (T002 — Prisma v7 + §8.1 schema)** — instructions below. Carried minor: env schema vs `.env.example` var-set mismatch (resolve within Part C).
 - PLAN.md §5.2 decision #21 (Turborepo) + §10 T001 amended before any code was written.
 
 ---
@@ -26,175 +26,21 @@ The detailed Part A instructions were removed from this file at acceptance (per 
 
 ---
 
-## Part B — T003: Dev infrastructure compose + env loading
+## Part B — T003: Dev infra compose + env module — ✅ ACCEPTED (2026-10-29)
 
-### B1. Compose file
+All B steps (B1 compose, B2 `@mt/shared` env module, B3 web wiring, B4 verify+commit) complete, review-accepted, logged in PLAN.md Appendix C.
 
-**Objective**: one-command local infra.
-**Files involved**: `docker/compose.dev.yaml`
+Reviewer-verified evidence:
+- Compose healthy: postgres:16 + redis:7 up, `PONG`, `pg_isready` accepting. Named volumes + AOF per plan.
+- Fail-fast proven in BOTH directions: missing `DATABASE_URL` → `Invalid environment: DATABASE_URL: expected string, received undefined` (thrown from `env.ts` loadEnv); restored → `db configured` indicator (boolean only, no URL leak).
+- Fresh `pnpm build`/`lint`/`typecheck` all exit 0.
+- Commits: `78ab816` (already merged T001 review fixes), `648d0db task(T003)`.
 
-**What to do**:
-
-```yaml
-services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: mockthread
-      POSTGRES_PASSWORD: mockthread
-      POSTGRES_DB: mockthread
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-  redis:
-    image: redis:7
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"
-    volumes:
-      - redisdata:/data
-
-volumes:
-  pgdata:
-  redisdata:
-```
-
-- Local dev: **no Redis password** (matches dev REDIS_URL without auth; prod adds `requirepass` per §13.1 comment). Dev-only ports exposed on localhost is fine.
-- Named volumes so data survives container restarts; a later `docker compose down -v` is the documented way to wipe.
-
-**Explain-before-run note**: `up -d` starts the two containers in the background and downloads the images the first time (~once). It does not delete anything. With named volumes, your dev data persists across `up`/`down`; only `down -v` erases data.
-
-**Terminal commands**:
-
-| Command | Expect |
-|---|---|
-| `docker compose -f docker/compose.dev.yaml up -d` | both containers "Started" |
-| `docker exec -it $(docker ps -qf "name=redis") redis-cli ping` | `PONG` |
-| `psql "postgresql://mockthread:mockthread@localhost:5432/mockthread" -c "\conninfo"` (or `docker exec -it <pg-container> psql -U mockthread -d mockthread -c "\conninfo"`) | connected |
-
-### B2. `packages/shared` + env module
-
-**Objective**: zod-validated env loading used by every app — fail-fast on missing vars.
-**Files involved**: `packages/shared/package.json`, `tsconfig.json`, `src/index.ts`, `src/env.ts`
-
-**terminal commands**:
-
-| Command | What it does |
-|---|---|
-| `mkdir -p packages/shared/src` | creates the package folder |
-| Then hand-create `package.json`, `tsconfig.json`, `src/index.ts`, `src/env.ts` below | no generator needed |
-
-Make `packages/shared/package.json` a **source-included package** (no build step yet — consumers import the TS directly; this is the simplest correct setup for pnpm workspaces + Next's bundler):
-
-```jsonc
-{
-  "name": "@mt/shared",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "dependencies": { "zod": "^4" },
-  "scripts": { "test": "vitest --passWithNoTests" }
-}
-```
-
-`packages/shared/tsconfig.json` minimal strict TS:
-
-```jsonc
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "skipLibCheck": true,
-    "noEmit": true
-  },
-  "include": ["src"]
-}
-```
-
-`src/env.ts` — the actual env contract. Pseudocode / syntax guidance (this is guidance, not final code — you write it):
-
-```ts
-import { z } from "zod";
-
-// one schema place per §13.1, parsed once per process
-const EnvSchema = z.object({
-  DATABASE_URL: z.string().url().startsWith("postgresql://"),
-  REDIS_URL: z.string().url(),
-  // Auth.js, LLM, engine, TURN, worker, flags — declare required vs. optional
-  // thoughtfully: GEMINI_API_KEY is OPTIONAL in dev (tests use a stub provider),
-  // TURN_SECRET optional in dev; ENGINE vars only meaningful for the worker.
-});
-
-export type Env = z.infer<typeof EnvSchema>;
-
-let cached: Env | undefined;
-
-export function loadEnv(): Env {
-  if (cached) return cached;
-  const parsed = EnvSchema.safeParse(process.env);
-  if (!parsed.success) {
-    // fail-fast: list every missing/invalid var, then throw. Never log secret values.
-    const issues = parsed.error.issues
-      .map((i) => `${i.path.join(".")}: ${i.message}`)
-      .join("; ");
-    throw new Error(`Invalid environment: ${issues}`);
-  }
-  mutated cached and returned;
-}
-
-export const env = loadEnv(); // importing modules get a validated object immediately
-```
-
-Design decisions to note in a short comment (your rationale, not mine to force):
-- **Parse-once module-level singleton** — env is immutable per process; late re-reads cause the classic "it worked in dev, failed in prod" bug class.
-- **Failure listing everything at once**, not first-error-only — one roundtrip catches every missing var.
-- `z.string().url()` rather than `min(1)` on DB URLs — the shape itself is the contract.
-- Recommend `dotenv`-style loading: apps call `import "dotenv/config"` (or use Next's built-in `.env` loading) **before** importing `@mt/shared`'s env module; document this in the package's `src/index.ts` as an exported note. Do not smuggle dotenv into the shared package config.
-
-`src/index.ts` re-exports `env` and `loadEnv`.
-
-### B3. Wire the web app into the env + infra
-
-**Files involved**: `apps/web/.env` (gitignored — copy from `.env.example`), `apps/web/src/app/page.tsx` (tiny change or none), a smoke check.
-
-**What to do**:
-1. Create `apps/web/.env` (copy from `.env.example`; **do not commit it — verify `.gitignore` already excludes `.env`**) with local dev values:
-   ```
-   DATABASE_URL=postgresql://mockthread:mockthread@localhost:5432/mockthread
-   REDIS_URL=redis://localhost:6379
-   AUTH_SECRET=(run `npx auth secret` ONCE and paste its output value — it's a local secret, only in .env)
-   ```
-2. Smoke proof the env works: link the shared package into the web app with
-   ```
-   pnpm --filter @mt/web add @mt/shared@workspace:*
-   ```
-   Because `@mt/shared` ships raw TypeScript (no build step), `apps/web/next.config.ts` must include it in the bundler:
-   ```ts
-   // apps/web/next.config.ts
-   const nextConfig = { transpilePackages: ["@mt/shared"] };
-   export default nextConfig;
-   ```
-   (When `@mt/db` gets added in Part C, add it to `transpilePackages` too.)
-3. Temporarily `import { env } from "@mt/shared";` in the landing page component and render `env.DATABASE_URL ? "db configured" : "db missing"` — **render a boolean indicator, not the URL itself** (don't leak connection strings to the browser).
-4. Document `docker compose -f docker/compose.dev.yaml up -d` + `pnpm dev` in `AGENTS.md` commands section (already covers it if you followed A7).
-
-### B4. Verify + commit
-
-| Command | Expect |
-|---|---|
-| `docker compose -f docker/compose.dev.yaml up -d` | both healthy |
-| `pnpm dev` → open `http://localhost:3000` | landing renders and shows the db-configured indicator |
-| Break test (proves fail-fast): temporarily comment out `DATABASE_URL` in `apps/web/.env`, restart `pnpm dev` | clear error listing the missing var; **then restore it** |
-| `git add -A && git commit -m "task(T003): dev infra compose + zod-validated env module in @mt/shared"` | committed |
+Carried Minor (fix by end of Part C, your choice, my lean = A):
+- env schema declares `ENGINE_URL`, `ENGINE_API_KEY`, `WORKER_CONCURRENCY` which are absent from `.env.example` → two sources of truth. Option A: add them to `.env.example`; Option B: drop from schema. Schema is the contract, so either direction is fine as long as they match. No boot risk (all optional/default'd).
 
 ---
+
 
 ## Part C — T002: packages/db (Prisma v7 + Postgres)
 
