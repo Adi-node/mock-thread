@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mt/db": "workspace:*",
     "@mt/shared": "workspace:*",
     "next": "16.4.3",
     "react": "19.3.0",

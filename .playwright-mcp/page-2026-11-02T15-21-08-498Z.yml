@@ -1,0 +1,6 @@
+- main [ref=e2]:
+  - heading "MockThread" [level=1] [ref=e3]
+  - paragraph [ref=e4]: Real-time peer-to-peer mock technical interviews
+  - link "Log in" [ref=e5] [cursor=pointer]:
+    - /url: /login
+  - paragraph [ref=e6]: loading topics…

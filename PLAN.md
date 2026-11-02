@@ -1215,4 +1215,6 @@ Boot checks (web up, WSS handshake, Redis ping, engine `docker info`, coturn `tu
 ## Appendix D — Decision & Findings Log (empty)
 
 | Date | Decision/Finding | Context |
-|---|---|---|
+|---|---|
+| 2026-11-02 | Auth.js `User` fields adopted with `email` OPTIONAL (`String? @unique`) — deviation from the Auth.js docs template (docs: `email String @unique` required) | OAuth via GitHub can withhold email (private email setting); a required column would crash those logins. The @auth/prisma-adapter `createUser` uses `stripUndefined(data)`, so optional columns receive data only when the provider sends it (Google always does). Part C review noted the fields as required-by-adapter; user first omitted them ("not needed for MVP"), reverted after adapter-source evidence. |
+---|

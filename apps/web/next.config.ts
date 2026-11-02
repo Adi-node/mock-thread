@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
-  transpilePackages: ["@mt/shared"], 
+  transpilePackages: ["@mt/shared", "@mt/db"], 
   turbopack: {
     rules: {
       "*.css": {
