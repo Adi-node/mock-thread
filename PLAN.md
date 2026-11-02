@@ -506,7 +506,7 @@ Parallel tracks (once their deps are `[x]`): P5 engine can be built alongside P3
 - **Outcome**: buildable skeleton for all later tasks.
 
 **T002 — packages/db: Prisma + Postgres** `Critical`
-- [ ] Not started
+- [x] Done (accepted in Milestone 1, Part C)
 - **Depends on**: T001
 - **Objective**: full schema (§8.1), migrations, client singleton.
 - **Steps**: 1) Add `packages/db` (Prisma v7 + `@prisma/adapter-pg`, port algo-arena's `prisma.ts` singleton + `postinstall: prisma generate`). 2) Author `schema.prisma` exactly per §8.1 (enums `Difficulty`, `RoomStatus`, `BlockStatus`). 3) `prisma migrate dev` locally (dev Postgres from T003). 4) Seed script placeholder for Topics.
@@ -1211,6 +1211,7 @@ Boot checks (web up, WSS handshake, Redis ping, engine `docker info`, coturn `tu
 |---|---|---|
 | T001 | 2026-10-29 | `pnpm build`/`lint`/`typecheck` all exit 0 via turbo (`typecheck`: 1 task, freshly executed); landing page renders — verified by reviewer from served HTML: HTTP 200 with `<h1 class="text-4xl text-neutral-100">MockThread</h1>` + tagline + `Log in` Link; workspace links `@mt/web`; no `.env` tracked; commits `c5f52e1` + review-fix set (incl. turbo task runner — decision #21) |
 | T003 | 2026-10-29 | compose.dev.yaml boots postgres:16 + redis:7 (AOF); reviewer verified `redis-cli ping`=PONG and `pg_isready`=accepting; zod env module in `@mt/shared` fail-fast verified twice (missing `DATABASE_URL` → clear error listing var; restore → indicator). Build/lint/typecheck fresh, exit 0. Commit `648d0db`. Minor carried: env schema has 3 engine/worker vars absent from `.env.example` — resolve by aligning one source (schema is the contract) |
+| T002 | 2026-11-02 | `migrate status` = "up to date" (2 migrations, reviewer-run); all 14 tables verified via psql incl. FKs/compound PK/index; seed idempotent (15 → 15 topics, reviewer-run twice); `@mt/db` singleton consumer verified: landing page server-renders "15 topics in the bank" (reviewer screenshot via real browser, streamed through Cache-Components Suspense); build/lint/typecheck fresh + cached replays exit 0. Commit `4ad639e`. Auth-fields omission from `User` (would break adapter `createUser`) caught in review and reverted per adapter-source evidence — see Appendix D |
 
 ## Appendix D — Decision & Findings Log (empty)
 
